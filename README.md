@@ -28,7 +28,7 @@
 
 ## 怎么用
 
-1. 打开界面后，进入 **Agent Settings**：LLM Provider 选 **openai**（兼容 OpenAI 接口的服务，包括各类国内中转，都选这个），在 Base URL 填接口地址，API Key 填密钥，Model Name 填模型名。
+1. 打开界面后，进入 **Agent Settings**：LLM Provider 选 **openai**（兼容 OpenAI 接口的服务，包括各类国内中转，都选这个），在 Base URL 填接口地址，API Key 填密钥，LLM Model Name 填模型名。
 2. 进入 **Browser Settings**：默认会用一个独立的浏览器；要沿用你自己浏览器里已登录的账号，可勾选 **Use Own Browser** 并填浏览器路径和用户数据目录（用之前先关闭该浏览器）。
 3. 进入 **Run Agent**，在输入框用一句话写出任务，点 **Submit Task**，界面里能看到 AI 的操作过程，随时可 Stop。
 
