@@ -1,3 +1,63 @@
+# 网页自动填表 / 采集助手（Browser Use WebUI）
+
+> 篝火出品 · 收录于篝火 App 应用区 · 基于开源项目 [browser-use/web-ui](https://github.com/browser-use/web-ui)（MIT）
+
+用一句话告诉 AI 要做什么（例如"打开某网页，把表格里的内容抄下来"），AI 会自己控制浏览器点击、输入、翻页，替你完成重复的填表和采集。
+
+## 合规提示
+
+- **只在你自己有权操作的网站和账号上使用**，并遵守网站的用户协议、robots 规则和当地法律。
+- 不要用它绕过登录验证、验证码，或做批量注册、刷量、抓取他人隐私数据。
+- 自动操作可能触发网站风控导致账号受限，使用后果自行承担。AI 可能点错，涉及付款、删除、提交的操作请先人工确认。
+
+## 下载与启动
+
+到 [Releases](https://github.com/campfire-code/browser-agent/releases/latest) 下载 `browser-agent_版本号_portable.zip`，解压到**路径里没有中文和空格**的文件夹。
+
+- **Windows**：双击「启动（Windows 双击）.bat」。
+- **Mac**：右键「启动（Mac 双击）.command」→「打开」。
+
+第一次启动会自动安装 uv、Python 3.11、依赖和 Playwright 的 Chromium 浏览器，可选国内镜像加速。以后再启动约几秒，启动完成会自动打开网页界面 http://127.0.0.1:7788。
+
+**首次安装的耗时与空间**（macOS Apple 芯片、宽带实测）：依赖安装约 1 分钟，下载 Chromium 约半分钟（该机器上已有大部分缓存，网络慢或在国内未选镜像时会明显更久），启动界面首次约 30 秒；占用约 **1.3 GB**（Python 依赖 .venv 约 0.8 GB，Chromium 约 0.5 GB，位于系统的 Playwright 缓存目录）。
+
+## 前置条件
+
+- 需要**自己的大模型接口**：软件不带模型。需要一个能做网页操作的模型（建议支持图片输入的模型），自备接口地址、密钥和模型名。
+- 需要联网。无需显卡。
+
+## 怎么用
+
+1. 打开界面后，进入 **Agent Settings**：LLM Provider 选 **openai**（兼容 OpenAI 接口的服务，包括各类国内中转，都选这个），在 Base URL 填接口地址，API Key 填密钥，Model Name 填模型名。
+2. 进入 **Browser Settings**：默认会用一个独立的浏览器；要沿用你自己浏览器里已登录的账号，可勾选 **Use Own Browser** 并填浏览器路径和用户数据目录（用之前先关闭该浏览器）。
+3. 进入 **Run Agent**，在输入框用一句话写出任务，点 **Submit Task**，界面里能看到 AI 的操作过程，随时可 Stop。
+
+**说明**
+- **界面是英文**，没有中文版。
+- 密钥只保存在本机。启动日志不会打印密钥。注意：在 **Load & Save Config** 页点保存配置，会把你填的设置（含密钥）以明文写进本目录 `tmp/webui_settings/`，不要把这个目录发给别人。
+- 本篝火版默认关闭匿名遥测（上游只在 `.env.example` 里关）。
+- 上游已在 2025 年 8 月转向新项目 VibeSurf，本工具对应上游最后的 v3.0.0 版本，依赖固定在 browser-use 0.1.48，维护较少。
+
+## 验收用例
+
+| 操作 | 应得到 |
+|---|---|
+| 双击启动，等待安装完成 | 浏览器自动打开 http://127.0.0.1:7788，显示英文界面 |
+| 填好接口、密钥、模型，在 Run Agent 输入"打开 example.com，告诉我页面标题" | 弹出浏览器并打开页面，界面返回标题 Example Domain |
+
+## 和上游的区别
+
+- 新增本中文说明、篝火启动脚本（`campfire/`）、`tool.json` 和发布流程 `.github/workflows/release.yml`；移除了上游的构建工作流。
+- `webui.py`：没有 `.env` 时默认关闭匿名遥测和 Gradio 统计；增加 `--open-browser` 参数，界面就绪后自动打开。
+
+## 归属与许可证
+
+上游项目 browser-use/web-ui，版权归原作者所有，按 MIT 协议分发，LICENSE 保留。篝火做的改动同样按 MIT 发布。
+
+---
+
+以下为上游原文。
+
 <img src="./assets/web-ui.png" alt="Browser Use Web UI" width="full"/>
 
 <br/>
