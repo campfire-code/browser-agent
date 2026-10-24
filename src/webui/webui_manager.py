@@ -116,7 +116,7 @@ class WebuiManager:
         config_status = self.id_to_component["load_save_config.config_status"]
         update_components.update(
             {
-                config_status: config_status.__class__(value=f"Successfully loaded config: {config_path}")
+                config_status: config_status.__class__(value=f"已加载设置：{config_path}")
             }
         )
         yield update_components

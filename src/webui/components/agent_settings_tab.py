@@ -52,29 +52,29 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
 
     with gr.Group():
         with gr.Column():
-            override_system_prompt = gr.Textbox(label="Override system prompt", lines=4, interactive=True)
-            extend_system_prompt = gr.Textbox(label="Extend system prompt", lines=4, interactive=True)
+            override_system_prompt = gr.Textbox(label="覆盖系统提示词", lines=4, interactive=True)
+            extend_system_prompt = gr.Textbox(label="追加系统提示词", lines=4, interactive=True)
 
     with gr.Group():
-        mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
-        mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
+        mcp_json_file = gr.File(label="MCP 服务配置文件（JSON）", interactive=True, file_types=[".json"])
+        mcp_server_config = gr.Textbox(label="MCP 服务配置", lines=6, interactive=True, visible=False)
 
     with gr.Group():
         with gr.Row():
             llm_provider = gr.Dropdown(
                 choices=[provider for provider, model in config.model_names.items()],
-                label="LLM Provider",
+                label="大模型服务商",
                 value=os.getenv("DEFAULT_LLM", "openai"),
-                info="Select LLM provider for LLM",
+                info="选择大模型服务商（兼容 OpenAI 接口的中转服务选 openai）",
                 interactive=True
             )
             llm_model_name = gr.Dropdown(
-                label="LLM Model Name",
+                label="模型名",
                 choices=config.model_names[os.getenv("DEFAULT_LLM", "openai")],
                 value=config.model_names[os.getenv("DEFAULT_LLM", "openai")][0],
                 interactive=True,
                 allow_custom_value=True,
-                info="Select a model in the dropdown options or directly type a custom model name"
+                info="在下拉里选择模型，也可以直接输入自定义的模型名"
             )
         with gr.Row():
             llm_temperature = gr.Slider(
@@ -82,15 +82,15 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 maximum=2.0,
                 value=0.6,
                 step=0.1,
-                label="LLM Temperature",
-                info="Controls randomness in model outputs",
+                label="温度",
+                info="数值越大，模型输出越随机",
                 interactive=True
             )
 
             use_vision = gr.Checkbox(
-                label="Use Vision",
+                label="使用图像理解",
                 value=True,
-                info="Enable Vision(Input highlighted screenshot into LLM)",
+                info="开启后会把带标注的网页截图一起发给模型（需要模型支持图片输入）",
                 interactive=True
             )
 
@@ -99,39 +99,39 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 maximum=2 ** 16,
                 value=16000,
                 step=1,
-                label="Ollama Context Length",
-                info="Controls max context length model needs to handle (less = faster)",
+                label="Ollama 上下文长度",
+                info="模型需要处理的最大上下文长度（越小越快）",
                 visible=False,
                 interactive=True
             )
 
         with gr.Row():
             llm_base_url = gr.Textbox(
-                label="Base URL",
+                label="接口地址",
                 value="",
-                info="API endpoint URL (if required)"
+                info="大模型接口地址（需要时填写）"
             )
             llm_api_key = gr.Textbox(
-                label="API Key",
+                label="密钥",
                 type="password",
                 value="",
-                info="Your API key (leave blank to use .env)"
+                info="你的接口密钥（留空则使用 .env 里的配置）"
             )
 
     with gr.Group():
         with gr.Row():
             planner_llm_provider = gr.Dropdown(
                 choices=[provider for provider, model in config.model_names.items()],
-                label="Planner LLM Provider",
-                info="Select LLM provider for LLM",
+                label="规划模型服务商",
+                info="选择大模型服务商（兼容 OpenAI 接口的中转服务选 openai）",
                 value=None,
                 interactive=True
             )
             planner_llm_model_name = gr.Dropdown(
-                label="Planner LLM Model Name",
+                label="规划模型名",
                 interactive=True,
                 allow_custom_value=True,
-                info="Select a model in the dropdown options or directly type a custom model name"
+                info="在下拉里选择模型，也可以直接输入自定义的模型名"
             )
         with gr.Row():
             planner_llm_temperature = gr.Slider(
@@ -139,15 +139,15 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 maximum=2.0,
                 value=0.6,
                 step=0.1,
-                label="Planner LLM Temperature",
-                info="Controls randomness in model outputs",
+                label="规划模型温度",
+                info="数值越大，模型输出越随机",
                 interactive=True
             )
 
             planner_use_vision = gr.Checkbox(
-                label="Use Vision(Planner LLM)",
+                label="使用图像理解（规划模型）",
                 value=False,
-                info="Enable Vision(Input highlighted screenshot into LLM)",
+                info="开启后会把带标注的网页截图一起发给模型（需要模型支持图片输入）",
                 interactive=True
             )
 
@@ -156,23 +156,23 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 maximum=2 ** 16,
                 value=16000,
                 step=1,
-                label="Ollama Context Length",
-                info="Controls max context length model needs to handle (less = faster)",
+                label="Ollama 上下文长度",
+                info="模型需要处理的最大上下文长度（越小越快）",
                 visible=False,
                 interactive=True
             )
 
         with gr.Row():
             planner_llm_base_url = gr.Textbox(
-                label="Base URL",
+                label="接口地址",
                 value="",
-                info="API endpoint URL (if required)"
+                info="大模型接口地址（需要时填写）"
             )
             planner_llm_api_key = gr.Textbox(
-                label="API Key",
+                label="密钥",
                 type="password",
                 value="",
-                info="Your API key (leave blank to use .env)"
+                info="你的接口密钥（留空则使用 .env 里的配置）"
             )
 
     with gr.Row():
@@ -181,8 +181,8 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             maximum=1000,
             value=100,
             step=1,
-            label="Max Run Steps",
-            info="Maximum number of steps the agent will take",
+            label="最大运行步数",
+            info="助手最多执行多少步",
             interactive=True
         )
         max_actions = gr.Slider(
@@ -190,20 +190,20 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
             maximum=100,
             value=10,
             step=1,
-            label="Max Number of Actions",
-            info="Maximum number of actions the agent will take per step",
+            label="每步最大操作数",
+            info="助手每一步最多执行多少个操作",
             interactive=True
         )
 
     with gr.Row():
         max_input_tokens = gr.Number(
-            label="Max Input Tokens",
+            label="最大输入令牌数",
             value=128000,
             precision=0,
             interactive=True
         )
         tool_calling_method = gr.Dropdown(
-            label="Tool Calling Method",
+            label="工具调用方式",
             value="auto",
             interactive=True,
             allow_custom_value=True,

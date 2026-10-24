@@ -36,7 +36,7 @@ async def _initialize_llm(provider: Optional[str], model_name: Optional[str], te
     except Exception as e:
         logger.error(f"Failed to initialize LLM: {e}", exc_info=True)
         gr.Warning(
-            f"Failed to initialize LLM '{model_name}' for provider '{provider}'. Please check settings. Error: {e}")
+            f"初始化大模型失败（服务商 {provider}，模型 {model_name}），请检查设置。错误：{e}")
         return None
 
 
@@ -85,7 +85,7 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
     mcp_config = json.loads(mcp_server_config_str) if mcp_server_config_str else None
 
     if not task_topic:
-        gr.Warning("Please enter a research task.")
+        gr.Warning("请先输入研究任务。")
         yield {start_button_comp: gr.update(interactive=True)}  # Re-enable start button
         return
 
@@ -95,13 +95,13 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
 
     # --- 2. Initial UI Update ---
     yield {
-        start_button_comp: gr.update(value="⏳ Running...", interactive=False),
+        start_button_comp: gr.update(value="⏳ 运行中...", interactive=False),
         stop_button_comp: gr.update(interactive=True),
         research_task_comp: gr.update(interactive=False),
         resume_task_id_comp: gr.update(interactive=False),
         parallel_num_comp: gr.update(interactive=False),
         save_dir_comp: gr.update(interactive=False),
-        markdown_display_comp: gr.update(value="Starting research..."),
+        markdown_display_comp: gr.update(value="正在开始研究..."),
         markdown_download_comp: gr.update(value=None, interactive=False)
     }
 
@@ -132,7 +132,7 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
             ollama_num_ctx if llm_provider_name == "ollama" else None
         )
         if not llm:
-            raise ValueError("LLM Initialization failed. Please check Agent Settings.")
+            raise ValueError("大模型初始化失败，请检查「模型设置」。")
 
         # Browser Config (from browser_settings tab)
         # Note: DeepResearchAgent constructor takes a dict, not full Browser/Context objects
@@ -248,29 +248,29 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
             if report_content:
                 final_ui_update[markdown_display_comp] = gr.update(value=report_content)
                 final_ui_update[markdown_download_comp] = gr.File(value=report_file_path,
-                                                                  label=f"Report ({running_task_id}.md)",
+                                                                  label=f"报告（{running_task_id}.md）",
                                                                   interactive=True)
             else:
                 final_ui_update[markdown_display_comp] = gr.update(
-                    value="# Research Complete\n\n*Error reading final report file.*")
+                    value="# 研究完成\n\n*读取最终报告文件失败。*")
         elif final_result_dict and 'report' in final_result_dict:
             logger.info("Using report content directly from agent result.")
             # If agent directly returns report content
             final_ui_update[markdown_display_comp] = gr.update(value=final_result_dict['report'])
             # Cannot offer download if only content is available
-            final_ui_update[markdown_download_comp] = gr.update(value=None, label="Download Research Report",
+            final_ui_update[markdown_download_comp] = gr.update(value=None, label="下载研究报告",
                                                                 interactive=False)
         else:
             logger.warning("Final report file not found and not in result dict.")
-            final_ui_update[markdown_display_comp] = gr.update(value="# Research Complete\n\n*Final report not found.*")
+            final_ui_update[markdown_display_comp] = gr.update(value="# 研究完成\n\n*没有找到最终报告。*")
 
         yield final_ui_update
 
 
     except Exception as e:
         logger.error(f"Error during Deep Research Agent execution: {e}", exc_info=True)
-        gr.Error(f"Research failed: {e}")
-        yield {markdown_display_comp: gr.update(value=f"# Research Failed\n\n**Error:**\n```\n{e}\n```")}
+        gr.Error(f"研究失败：{e}")
+        yield {markdown_display_comp: gr.update(value=f"# 研究失败\n\n**错误：**\n```\n{e}\n```")}
 
     finally:
         # --- 8. Final UI Reset ---
@@ -278,7 +278,7 @@ async def run_deep_research(webui_manager: WebuiManager, components: Dict[Compon
         webui_manager.dr_task_id = None  # Clear running task ID
 
         yield {
-            start_button_comp: gr.update(value="▶️ Run", interactive=True),
+            start_button_comp: gr.update(value="▶️ 开始研究", interactive=True),
             stop_button_comp: gr.update(interactive=False),
             research_task_comp: gr.update(interactive=True),
             resume_task_id_comp: gr.update(value="", interactive=True),
@@ -304,7 +304,7 @@ async def stop_deep_research(webui_manager: WebuiManager) -> Dict[Component, Any
     markdown_download_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_download")
 
     final_update = {
-        stop_button_comp: gr.update(interactive=False, value="⏹️ Stopping...")
+        stop_button_comp: gr.update(interactive=False, value="⏹️ 正在停止...")
     }
 
     if agent and task and not task.done():
@@ -328,14 +328,14 @@ async def stop_deep_research(webui_manager: WebuiManager) -> Dict[Component, Any
             report_content = _read_file_safe(report_file_path)
             if report_content:
                 final_update[markdown_display_comp] = gr.update(
-                    value=report_content + "\n\n---\n*Research stopped by user.*")
-                final_update[markdown_download_comp] = gr.File(value=report_file_path, label=f"Report ({task_id}.md)",
+                    value=report_content + "\n\n---\n*研究已被你停止。*")
+                final_update[markdown_download_comp] = gr.File(value=report_file_path, label=f"报告（{task_id}.md）",
                                                                interactive=True)
             else:
                 final_update[markdown_display_comp] = gr.update(
-                    value="# Research Stopped\n\n*Error reading final report file after stop.*")
+                    value="# 研究已停止\n\n*停止后读取最终报告文件失败。*")
         else:
-            final_update[markdown_display_comp] = gr.update(value="# Research Stopped by User")
+            final_update[markdown_display_comp] = gr.update(value="# 研究已被你停止")
 
         # Keep start button disabled, run_deep_research finally block will re-enable it.
         final_update[start_button_comp] = gr.update(interactive=False)
@@ -382,27 +382,27 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
 
     with gr.Group():
         with gr.Row():
-            mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
-            mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
+            mcp_json_file = gr.File(label="MCP 服务配置文件（JSON）", interactive=True, file_types=[".json"])
+            mcp_server_config = gr.Textbox(label="MCP 服务配置", lines=6, interactive=True, visible=False)
 
     with gr.Group():
-        research_task = gr.Textbox(label="Research Task", lines=5,
-                                   value="Give me a detailed travel plan to Switzerland from June 1st to 10th.",
+        research_task = gr.Textbox(label="研究任务", lines=5,
+                                   value="请给我一份详细的瑞士旅行计划，时间是 6 月 1 日到 10 日。",
                                    interactive=True)
         with gr.Row():
-            resume_task_id = gr.Textbox(label="Resume Task ID", value="",
+            resume_task_id = gr.Textbox(label="续跑任务编号", value="",
                                         interactive=True)
-            parallel_num = gr.Number(label="Parallel Agent Num", value=1,
+            parallel_num = gr.Number(label="并行助手数量", value=1,
                                      precision=0,
                                      interactive=True)
-            max_query = gr.Textbox(label="Research Save Dir", value="./tmp/deep_research",
+            max_query = gr.Textbox(label="研究报告保存目录", value="./tmp/deep_research",
                                    interactive=True)
     with gr.Row():
-        stop_button = gr.Button("⏹️ Stop", variant="stop", scale=2)
-        start_button = gr.Button("▶️ Run", variant="primary", scale=3)
+        stop_button = gr.Button("⏹️ 停止", variant="stop", scale=2)
+        start_button = gr.Button("▶️ 开始研究", variant="primary", scale=3)
     with gr.Group():
-        markdown_display = gr.Markdown(label="Research Report")
-        markdown_download = gr.File(label="Download Research Report", interactive=False)
+        markdown_display = gr.Markdown(label="研究报告")
+        markdown_download = gr.File(label="下载研究报告", interactive=False)
     tab_components.update(
         dict(
             research_task=research_task,

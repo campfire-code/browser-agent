@@ -61,7 +61,7 @@ async def _initialize_llm(
     except Exception as e:
         logger.error(f"Failed to initialize LLM: {e}", exc_info=True)
         gr.Warning(
-            f"Failed to initialize LLM '{model_name}' for provider '{provider}'. Please check settings. Error: {e}"
+            f"初始化大模型失败（服务商 {provider}，模型 {model_name}），请检查设置。错误：{e}"
         )
         return None
 
@@ -119,11 +119,11 @@ def _format_agent_output(model_output: AgentOutput) -> str:
             logger.error(
                 f"AttributeError during model dump: {ae}. Check if 'action' or 'current_state' or their items support 'model_dump'."
             )
-            content = f"<pre><code>Error: Could not format agent output (AttributeError: {ae}).\nRaw output: {str(model_output)}</code></pre>"
+            content = f"<pre><code>错误：无法格式化助手输出（AttributeError: {ae}）。\n原始输出：{str(model_output)}</code></pre>"
         except Exception as e:
             logger.error(f"Error formatting agent output: {e}", exc_info=True)
             # Fallback to simple string representation on error
-            content = f"<pre><code>Error formatting agent output.\nRaw output:\n{str(model_output)}</code></pre>"
+            content = f"<pre><code>格式化助手输出时出错。\n原始输出：\n{str(model_output)}</code></pre>"
 
     return content.strip()
 
@@ -159,7 +159,7 @@ async def _handle_new_step(
                     isinstance(screenshot_data, str) and len(screenshot_data) > 100
             ):  # Arbitrary length check
                 # *** UPDATED STYLE: Removed centering, adjusted width ***
-                img_tag = f'<img src="data:image/jpeg;base64,{screenshot_data}" alt="Step {step_num} Screenshot" style="max-width: 800px; max-height: 600px; object-fit:contain;" />'
+                img_tag = f'<img src="data:image/jpeg;base64,{screenshot_data}" alt="第 {step_num} 步截图" style="max-width: 800px; max-height: 600px; object-fit:contain;" />'
                 screenshot_html = (
                         img_tag + "<br/>"
                 )  # Use <br/> for line break after inline-block image
@@ -167,14 +167,14 @@ async def _handle_new_step(
                 logger.warning(
                     f"Screenshot for step {step_num} seems invalid (type: {type(screenshot_data)}, len: {len(screenshot_data) if isinstance(screenshot_data, str) else 'N/A'})."
                 )
-                screenshot_html = "**[Invalid screenshot data]**<br/>"
+                screenshot_html = "**[截图数据无效]**<br/>"
 
         except Exception as e:
             logger.error(
                 f"Error processing or formatting screenshot for step {step_num}: {e}",
                 exc_info=True,
             )
-            screenshot_html = "**[Error displaying screenshot]**<br/>"
+            screenshot_html = "**[截图显示失败]**<br/>"
     else:
         logger.debug(f"No screenshot available for step {step_num}.")
 
@@ -182,7 +182,7 @@ async def _handle_new_step(
     formatted_output = _format_agent_output(output)  # Use the updated function
 
     # --- Combine and Append to Chat ---
-    step_header = f"--- **Step {step_num}** ---"
+    step_header = f"--- **第 {step_num} 步** ---"
     # Combine header, image (with line break), and JSON block
     final_content = step_header + "<br/>" + screenshot_html + formatted_output
 
@@ -202,19 +202,19 @@ def _handle_done(webui_manager: WebuiManager, history: AgentHistoryList):
     logger.info(
         f"Agent task finished. Duration: {history.total_duration_seconds():.2f}s, Tokens: {history.total_input_tokens()}"
     )
-    final_summary = "**Task Completed**\n"
-    final_summary += f"- Duration: {history.total_duration_seconds():.2f} seconds\n"
-    final_summary += f"- Total Input Tokens: {history.total_input_tokens()}\n"  # Or total tokens if available
+    final_summary = "**任务完成**\n"
+    final_summary += f"- 耗时：{history.total_duration_seconds():.2f} 秒\n"
+    final_summary += f"- 输入令牌总数：{history.total_input_tokens()}\n"  # Or total tokens if available
 
     final_result = history.final_result()
     if final_result:
-        final_summary += f"- Final Result: {final_result}\n"
+        final_summary += f"- 最终结果：{final_result}\n"
 
     errors = history.errors()
     if errors and any(errors):
-        final_summary += f"- **Errors:**\n```\n{errors}\n```\n"
+        final_summary += f"- **错误：**\n```\n{errors}\n```\n"
     else:
-        final_summary += "- Status: Success\n"
+        final_summary += "- 状态：成功\n"
 
     webui_manager.bu_chat_history.append(
         {"role": "assistant", "content": final_summary}
@@ -229,12 +229,12 @@ async def _ask_assistant_callback(
 
     if not hasattr(webui_manager, "_chat_history"):
         logger.error("Chat history not found in webui_manager during ask_assistant!")
-        return {"response": "Internal Error: Cannot display help request."}
+        return {"response": "内部错误：无法显示求助信息。"}
 
     webui_manager.bu_chat_history.append(
         {
             "role": "assistant",
-            "content": f"**Need Help:** {query}\nPlease provide information or perform the required action in the browser, then type your response/confirmation below and click 'Submit Response'.",
+            "content": f"**需要你的帮助：**{query}\n请在浏览器里提供信息或完成所需操作，然后在下方输入回复或确认，并点击「提交回复」。",
         }
     )
 
@@ -253,11 +253,11 @@ async def _ask_assistant_callback(
         webui_manager.bu_chat_history.append(
             {
                 "role": "assistant",
-                "content": "**Timeout:** No response received. Trying to proceed.",
+                "content": "**超时：**没有收到回复，将尝试继续执行。",
             }
         )
         webui_manager.bu_response_event = None  # Clear the event
-        return {"response": "Timeout: User did not respond."}  # Inform the agent
+        return {"response": "超时：用户没有回复。"}  # Inform the agent
 
     response = webui_manager.bu_user_help_response
     webui_manager.bu_chat_history.append(
@@ -302,7 +302,7 @@ async def run_agent_task(
     # --- 1. Get Task and Initial UI Update ---
     task = components.get(user_input_comp, "").strip()
     if not task:
-        gr.Warning("Please enter a task.")
+        gr.Warning("请先输入任务。")
         yield {run_button_comp: gr.update(interactive=True)}
         return
 
@@ -311,11 +311,11 @@ async def run_agent_task(
 
     yield {
         user_input_comp: gr.Textbox(
-            value="", interactive=False, placeholder="Agent is running..."
+            value="", interactive=False, placeholder="助手正在运行..."
         ),
-        run_button_comp: gr.Button(value="⏳ Running...", interactive=False),
+        run_button_comp: gr.Button(value="⏳ 运行中...", interactive=False),
         stop_button_comp: gr.Button(interactive=True),
-        pause_resume_button_comp: gr.Button(value="⏸️ Pause", interactive=True),
+        pause_resume_button_comp: gr.Button(value="⏸️ 暂停", interactive=True),
         clear_button_comp: gr.Button(interactive=False),
         chatbot_comp: gr.update(value=webui_manager.bu_chat_history),
         history_file_comp: gr.update(value=None),
@@ -489,7 +489,7 @@ async def run_agent_task(
                 window_width=window_w,
             )
             if not webui_manager.bu_browser:
-                raise ValueError("Browser not initialized, cannot create context.")
+                raise ValueError("浏览器尚未初始化，无法创建浏览器会话。")
             webui_manager.bu_browser_context = (
                 await webui_manager.bu_browser.new_context(config=context_config)
             )
@@ -524,7 +524,7 @@ async def run_agent_task(
             logger.info(f"Initializing new agent for task: {task}")
             if not webui_manager.bu_browser or not webui_manager.bu_browser_context:
                 raise ValueError(
-                    "Browser or Context not initialized, cannot create agent."
+                    "浏览器或浏览器会话尚未初始化，无法创建助手。"
                 )
             webui_manager.bu_agent = BrowserUseAgent(
                 task=task,
@@ -568,7 +568,7 @@ async def run_agent_task(
             if is_paused:
                 yield {
                     pause_resume_button_comp: gr.update(
-                        value="▶️ Resume", interactive=True
+                        value="▶️ 继续", interactive=True
                     ),
                     stop_button_comp: gr.update(interactive=True),
                 }
@@ -589,10 +589,10 @@ async def run_agent_task(
                 # If resumed, yield UI update
                 yield {
                     pause_resume_button_comp: gr.update(
-                        value="⏸️ Pause", interactive=True
+                        value="⏸️ 暂停", interactive=True
                     ),
                     run_button_comp: gr.update(
-                        value="⏳ Running...", interactive=False
+                        value="⏳ 运行中...", interactive=False
                     ),
                 }
 
@@ -619,11 +619,11 @@ async def run_agent_task(
             if webui_manager.bu_response_event is not None:
                 update_dict = {
                     user_input_comp: gr.update(
-                        placeholder="Agent needs help. Enter response and submit.",
+                        placeholder="助手需要帮助，请输入回复并提交。",
                         interactive=True,
                     ),
                     run_button_comp: gr.update(
-                        value="✔️ Submit Response", interactive=True
+                        value="✔️ 提交回复", interactive=True
                     ),
                     pause_resume_button_comp: gr.update(interactive=False),
                     stop_button_comp: gr.update(interactive=False),
@@ -638,10 +638,10 @@ async def run_agent_task(
                 if not agent_task.done():
                     yield {
                         user_input_comp: gr.update(
-                            placeholder="Agent is running...", interactive=False
+                            placeholder="助手正在运行...", interactive=False
                         ),
                         run_button_comp: gr.update(
-                            value="⏳ Running...", interactive=False
+                            value="⏳ 运行中...", interactive=False
                         ),
                         pause_resume_button_comp: gr.update(interactive=True),
                         stop_button_comp: gr.update(interactive=True),
@@ -668,14 +668,14 @@ async def run_agent_task(
                             value=html_content, visible=True
                         )
                     else:
-                        html_content = f"<h1 style='width:{stream_vw}vw; height:{stream_vh}vh'>Waiting for browser session...</h1>"
+                        html_content = f"<h1 style='width:{stream_vw}vw; height:{stream_vh}vh'>正在等待浏览器会话...</h1>"
                         update_dict[browser_view_comp] = gr.update(
                             value=html_content, visible=True
                         )
                 except Exception as e:
                     logger.debug(f"Failed to capture screenshot: {e}")
                     update_dict[browser_view_comp] = gr.update(
-                        value="<div style='...'>Error loading view...</div>",
+                        value="<div style='...'>加载画面失败...</div>",
                         visible=True,
                     )
             else:
@@ -713,18 +713,18 @@ async def run_agent_task(
         except asyncio.CancelledError:
             logger.info("Agent task was cancelled.")
             if not any(
-                    "Cancelled" in msg.get("content", "")
+                    "任务已取消" in msg.get("content", "")
                     for msg in webui_manager.bu_chat_history
                     if msg.get("role") == "assistant"
             ):
                 webui_manager.bu_chat_history.append(
-                    {"role": "assistant", "content": "**Task Cancelled**."}
+                    {"role": "assistant", "content": "**任务已取消。**"}
                 )
             final_update[chatbot_comp] = gr.update(value=webui_manager.bu_chat_history)
         except Exception as e:
             logger.error(f"Error during agent execution: {e}", exc_info=True)
             error_message = (
-                f"**Agent Execution Error:**\n```\n{type(e).__name__}: {e}\n```"
+                f"**助手运行出错：**\n```\n{type(e).__name__}: {e}\n```"
             )
             if not any(
                     error_message in msg.get("content", "")
@@ -735,7 +735,7 @@ async def run_agent_task(
                     {"role": "assistant", "content": error_message}
                 )
             final_update[chatbot_comp] = gr.update(value=webui_manager.bu_chat_history)
-            gr.Error(f"Agent execution failed: {e}")
+            gr.Error(f"助手运行失败：{e}")
 
         finally:
             webui_manager.bu_current_task = None  # Clear the task reference
@@ -757,12 +757,12 @@ async def run_agent_task(
                     user_input_comp: gr.update(
                         value="",
                         interactive=True,
-                        placeholder="Enter your next task...",
+                        placeholder="输入下一个任务...",
                     ),
-                    run_button_comp: gr.update(value="▶️ Submit Task", interactive=True),
-                    stop_button_comp: gr.update(value="⏹️ Stop", interactive=False),
+                    run_button_comp: gr.update(value="▶️ 提交任务", interactive=True),
+                    stop_button_comp: gr.update(value="⏹️ 停止", interactive=False),
                     pause_resume_button_comp: gr.update(
-                        value="⏸️ Pause", interactive=False
+                        value="⏸️ 暂停", interactive=False
                     ),
                     clear_button_comp: gr.update(interactive=True),
                     # Ensure final chat history is shown
@@ -777,15 +777,15 @@ async def run_agent_task(
         webui_manager.bu_current_task = None  # Ensure state is reset
         yield {
             user_input_comp: gr.update(
-                interactive=True, placeholder="Error during setup. Enter task..."
+                interactive=True, placeholder="初始化出错，请重新输入任务..."
             ),
-            run_button_comp: gr.update(value="▶️ Submit Task", interactive=True),
-            stop_button_comp: gr.update(value="⏹️ Stop", interactive=False),
-            pause_resume_button_comp: gr.update(value="⏸️ Pause", interactive=False),
+            run_button_comp: gr.update(value="▶️ 提交任务", interactive=True),
+            stop_button_comp: gr.update(value="⏹️ 停止", interactive=False),
+            pause_resume_button_comp: gr.update(value="⏸️ 暂停", interactive=False),
             clear_button_comp: gr.update(interactive=True),
             chatbot_comp: gr.update(
                 value=webui_manager.bu_chat_history
-                      + [{"role": "assistant", "content": f"**Setup Error:** {e}"}]
+                      + [{"role": "assistant", "content": f"**初始化出错：** {e}"}]
             ),
         }
 
@@ -804,7 +804,7 @@ async def handle_submit(
     if webui_manager.bu_response_event and not webui_manager.bu_response_event.is_set():
         logger.info(f"User submitted assistance: {user_input_value}")
         webui_manager.bu_user_help_response = (
-            user_input_value if user_input_value else "User provided no text response."
+            user_input_value if user_input_value else "用户没有提供文字回复。"
         )
         webui_manager.bu_response_event.set()
         # UI updates handled by the main loop reacting to the event being set
@@ -812,18 +812,18 @@ async def handle_submit(
             user_input_comp: gr.update(
                 value="",
                 interactive=False,
-                placeholder="Waiting for agent to continue...",
+                placeholder="等待助手继续...",
             ),
             webui_manager.get_component_by_id(
                 "browser_use_agent.run_button"
-            ): gr.update(value="⏳ Running...", interactive=False),
+            ): gr.update(value="⏳ 运行中...", interactive=False),
         }
     # Check if a task is currently running (using _current_task)
     elif webui_manager.bu_current_task and not webui_manager.bu_current_task.done():
         logger.warning(
             "Submit button clicked while agent is already running and not asking for help."
         )
-        gr.Info("Agent is currently running. Please wait or use Stop/Pause.")
+        gr.Info("助手正在运行，请等待，或使用「停止」「暂停」。")
         yield {}  # No change
     else:
         # Handle submission for a new task
@@ -846,7 +846,7 @@ async def handle_stop(webui_manager: WebuiManager):
         return {
             webui_manager.get_component_by_id(
                 "browser_use_agent.stop_button"
-            ): gr.update(interactive=False, value="⏹️ Stopping..."),
+            ): gr.update(interactive=False, value="⏹️ 正在停止..."),
             webui_manager.get_component_by_id(
                 "browser_use_agent.pause_resume_button"
             ): gr.update(interactive=False),
@@ -886,7 +886,7 @@ async def handle_pause_resume(webui_manager: WebuiManager):
             return {
                 webui_manager.get_component_by_id(
                     "browser_use_agent.pause_resume_button"
-                ): gr.update(value="⏸️ Pause", interactive=True)
+                ): gr.update(value="⏸️ 暂停", interactive=True)
             }  # Optimistic update
         else:
             logger.info("Pause button clicked.")
@@ -894,7 +894,7 @@ async def handle_pause_resume(webui_manager: WebuiManager):
             return {
                 webui_manager.get_component_by_id(
                     "browser_use_agent.pause_resume_button"
-                ): gr.update(value="▶️ Resume", interactive=True)
+                ): gr.update(value="▶️ 继续", interactive=True)
             }  # Optimistic update
     else:
         logger.warning(
@@ -940,7 +940,7 @@ async def handle_clear(webui_manager: WebuiManager):
             value=[]
         ),
         webui_manager.get_component_by_id("browser_use_agent.user_input"): gr.update(
-            value="", placeholder="Enter your task here..."
+            value="", placeholder="在这里输入任务..."
         ),
         webui_manager.get_component_by_id(
             "browser_use_agent.agent_history_file"
@@ -949,17 +949,17 @@ async def handle_clear(webui_manager: WebuiManager):
             value=None
         ),
         webui_manager.get_component_by_id("browser_use_agent.browser_view"): gr.update(
-            value="<div style='...'>Browser Cleared</div>"
+            value="<div style='...'>浏览器画面已清空</div>"
         ),
         webui_manager.get_component_by_id("browser_use_agent.run_button"): gr.update(
-            value="▶️ Submit Task", interactive=True
+            value="▶️ 提交任务", interactive=True
         ),
         webui_manager.get_component_by_id("browser_use_agent.stop_button"): gr.update(
             interactive=False
         ),
         webui_manager.get_component_by_id(
             "browser_use_agent.pause_resume_button"
-        ): gr.update(value="⏸️ Pause", interactive=False),
+        ): gr.update(value="⏸️ 暂停", interactive=False),
         webui_manager.get_component_by_id("browser_use_agent.clear_button"): gr.update(
             interactive=True
         ),
@@ -981,41 +981,41 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         chatbot = gr.Chatbot(
             lambda: webui_manager.bu_chat_history,  # Load history dynamically
             elem_id="browser_use_chatbot",
-            label="Agent Interaction",
+            label="助手对话",
             type="messages",
             height=600,
             show_copy_button=True,
         )
         user_input = gr.Textbox(
-            label="Your Task or Response",
-            placeholder="Enter your task here or provide assistance when asked.",
+            label="你的任务或回复",
+            placeholder="在这里输入任务，或在助手求助时输入你的回复。",
             lines=3,
             interactive=True,
             elem_id="user_input",
         )
         with gr.Row():
             stop_button = gr.Button(
-                "⏹️ Stop", interactive=False, variant="stop", scale=2
+                "⏹️ 停止", interactive=False, variant="stop", scale=2
             )
             pause_resume_button = gr.Button(
-                "⏸️ Pause", interactive=False, variant="secondary", scale=2, visible=True
+                "⏸️ 暂停", interactive=False, variant="secondary", scale=2, visible=True
             )
             clear_button = gr.Button(
-                "🗑️ Clear", interactive=True, variant="secondary", scale=2
+                "🗑️ 清空", interactive=True, variant="secondary", scale=2
             )
-            run_button = gr.Button("▶️ Submit Task", variant="primary", scale=3)
+            run_button = gr.Button("▶️ 提交任务", variant="primary", scale=3)
 
         browser_view = gr.HTML(
-            value="<div style='width:100%; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'><p>Browser View (Requires Headless=True)</p></div>",
-            label="Browser Live View",
+            value="<div style='width:100%; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'><p>浏览器画面（需要开启「无界面模式」）</p></div>",
+            label="浏览器实时画面",
             elem_id="browser_view",
             visible=False,
         )
         with gr.Column():
-            gr.Markdown("### Task Outputs")
-            agent_history_file = gr.File(label="Agent History JSON", interactive=False)
+            gr.Markdown("### 任务输出")
+            agent_history_file = gr.File(label="执行记录（JSON）", interactive=False)
             recording_gif = gr.Image(
-                label="Task Recording GIF",
+                label="任务录屏（GIF）",
                 format="gif",
                 interactive=False,
                 type="filepath",

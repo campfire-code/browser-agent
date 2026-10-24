@@ -2,7 +2,7 @@
   "id": "a01",
   "slug": "browser-agent",
   "name": "网页自动填表 / 采集助手",
-  "version": "3.0.0-campfire.1",
+  "version": "3.0.0-campfire.2",
   "repo": "campfire-code/browser-agent",
   "license": "MIT",
   "delivery": "launcher",
